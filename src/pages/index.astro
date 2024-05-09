@@ -1,0 +1,114 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Food Trucks">
+	<div class="p-6">
+		<div class="max-w-[1000px] mx-auto">
+			<div id="map" class="h-[450px]"></div>
+			<h3 class="text-center mb-5 mt-8 text-2xl font-bold">Food Trucks Nearby</h3>
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+				<div id="foodTrucks" class="!hidden"></div>
+			</div>
+			</div>
+		</div>
+	</div>
+</Layout>
+
+<!-- Use Google Map Key -->
+<script src="https://maps.googleapis.com/maps/api/js?key=MAP_KEY&callback=myMap"></script>
+
+<script type="module">
+	// Truck data, Use endpoint to make it dynamic
+	const trucks = [
+		{
+			latitude: 37.74530890865633,
+			longitude: -122.40342005999852,
+			name: "Reecees Soulicious",
+			food: "Fried Chicken: Fried Fish: Greens: Mac & Cheese: Peach Cobbler: and String beans"
+		},
+
+		{
+			latitude: 37.7758255197583,
+			longitude: -122.41724962664345,
+			name: "The Chef Station",
+			food: "South American/Peruvian food"
+		},
+		{
+			latitude: 37.790149073725544,
+			longitude: -122.39865818460403,
+			name: "Scotch Bonnet",
+			food: "Jerk chicken: curry chicken: curry goat: curry dhal: Burritos: Fish: Ox tails: rice: beans: veggies."
+		}
+	]
+
+	let map;
+
+	async function initMap() {
+		const { Map, InfoWindow } = await google.maps.importLibrary("maps");
+		const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary(
+			"marker",
+		);
+
+		map = new google.maps.Map(document.getElementById("map"), {
+			center: new google.maps.LatLng(trucks[0].latitude, trucks[0].longitude),
+			zoom: 12
+		});
+
+		const iconBase = "/f.png";
+
+		const infoWindow = new InfoWindow();
+
+		trucks.forEach((truck) => {
+			const position = new google.maps.LatLng(truck.latitude, truck.longitude);
+			const marker = new google.maps.Marker({
+				map,
+				position: position
+			});
+
+			const modalContent =
+				`<div class="max-w-[200px]">
+					<div class="flex flex-col gap-1">
+						<h3 class="font-bold">${ truck.name ? truck.name : '' }</h3>
+						<p>${ truck.food ? truck.food : '' }</p>
+					</div>
+				</div>`;
+
+			// Add a click listener for each marker, and set up the info window.
+			marker.addListener('click', () => {
+				infoWindow.close();
+				infoWindow.setContent(modalContent);
+				infoWindow.open(marker.map, marker);
+			});
+		});
+
+		google.maps.event.addListener(map, 'bounds_changed', function() {
+			const bounds = map.getBounds();
+			trucks.forEach((truck) => {
+				const position = { lat: parseFloat(truck.latitude), lng: parseFloat(truck.longitude) };
+				const renderedElement = document.querySelector('.truck-list-item[data-name="' + truck.name + '"]');
+				if (bounds.contains(position)) {
+					renderedElement.classList.remove('hidden');
+				} else {
+					renderedElement.classList.add('hidden');
+				}
+			})
+		});
+	}
+	initMap();
+
+	function renderTrucks() {
+		trucks.forEach((truck) => {
+			const renderDiv =
+				`<div class="truck-list-item border border-solid border-[#000] rounded-lg p-4" data-name="${truck.name}">
+					<div class="">
+						<h3 class="font-bold text-lg mb-2">${ truck.name ? truck.name : '' }</h3>
+						<p class="text-base leading-tight">${ truck.food ? truck.food : '' }</p>
+					</div>
+				</div>`;
+
+			document.getElementById("foodTrucks").insertAdjacentHTML("afterend", renderDiv);
+		});
+	}
+	renderTrucks();
+</script>
